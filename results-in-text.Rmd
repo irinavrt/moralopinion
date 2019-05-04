@@ -32,7 +32,7 @@ mf_measures <- read_rds("data/mf_measures.rds")
 
 ```{r aggregate_data}
 
-# estimate if default position is more popular among liberals
+# check if default position is more popular among liberals
 
 mf_data <- gss_bin %>% 
   filter(polviews %in% c("liberal", "conservative")) %>% 

@@ -19,6 +19,7 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 library(tidyverse)
 library(broom)
+library(furrr)
 
 # ggplot settings
 theme_set(theme_classic(base_size = 11))
@@ -232,10 +233,11 @@ fixed_effects %>%
 
 
 
-```{r sfig5, fig.width = 4, fig.height = 3, fig.cap = "**Mean correlation between harm-fairness connection advantage and rate of change as a function of sample size of argument measures.** The average correlation based on 200 random draws of n responses. Small sample sizes lead to an underestimation of the main effect, but not its precision. Sample sizes above 40 are sufficient to get reliable estimates of the harm-fairness connection advantage. Note that the sample used has on average 176 responses per issue."}
+```{r sfig5, fig.width = 6, fig.height = 3, fig.cap = "**Mean correlation between harm-fairness connection advantage and rate of change as a function of sample size of argument measures.** The average correlation based on 200 random draws of n responses. Small sample sizes lead to an underestimation of the main effect, but not its precision. Sample sizes above 40 are sufficient to get reliable estimates of the harm-fairness connection advantage. Note that the sample used has on average 176 responses per issue.", cache = TRUE}
 
 # etimate time trends
 gss_bin <- read_rds("data/cleaned-gss.rds")
+
 by_issue <- gss_bin %>% 
   mutate(year_10 = (year - 1972)/10) %>% 
   group_by(issue) %>% 
@@ -254,7 +256,7 @@ gss_trends <- by_issue %>%
 
 # this function estimates correlation between harm-fainess advantage and rate of change based on random n responsed
 draw_cor_for_selected_n_orig_response <- function(n, mturk_data = mt, trends = gss_trends){
-  full_arguments <- data %>% 
+  full_arguments <- mturk_data %>% 
     group_by(issue) %>% 
     sample_n(n, replace = TRUE) %>% 
     ungroup() %>% 
@@ -286,25 +288,41 @@ draw_cor_for_selected_n_orig_response <- function(n, mturk_data = mt, trends = g
     ungroup() %>% 
     left_join(trends, by = "issue") 
   
-  mf_data %>% 
-    summarise(cor = cor(hf_adv, change_rate)) 
-  }
+  lm(change_rate ~ hf_adv, mf_data) %>% 
+    broom::tidy() %>% 
+    filter(term == "hf_adv") %>% 
+    select(estimate, std.error) %>% 
+    mutate(cor = mf_data %>% 
+             summarise(cor = cor(hf_adv, change_rate)) %>% 
+             unlist())
+}
 
 mt <- read_rds("data/mturk-responses.rds")
 
-by_n <- tibble(n_samp = rep(c(1, 2, 3, 5, 10, 20, 40, 60, 80, 100, 120, 150), 
+by_n <- tibble(n_samp = rep(c(2, 5, 10, 20, 40, 60, 80, 100, 120, 150), 
                             each = 200)) 
+
+plan(multiprocess)
+
 by_n <- by_n %>% 
-  mutate(cor = map(n_samp, draw_cor_for_selected_n_orig_response))
+  mutate(cor = future_map(n_samp, draw_cor_for_selected_n_orig_response))
 
 by_n %>% 
   unnest(cor) %>% 
-  group_by(n_samp) %>% 
-  summarise(mean = mean(cor)) %>%
-  ggplot(aes(n_samp, mean)) +
+  gather(measure, value, estimate, std.error, cor) %>% 
+  mutate(measure = factor(measure, 
+                          levels = c("estimate", "std.error", "cor"),
+                          labels = c("coefficient", "standard error", "correlation"))) %>% 
+  group_by(n_samp, measure) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>%
+  ggplot(aes(n_samp, mean, ymin = mean - 2*sd, ymax = mean + 2*sd)) +
+  geom_ribbon(alpha = 1/2, fill = "grey70") + 
   geom_line() +
+  geom_blank(data = scale_range) +
   theme_classic(base_size = 11) %>% 
-  labs(x = "n")
+  labs(x = "n") +
+  facet_wrap(~measure, scales = "free")
 
 ```
 
