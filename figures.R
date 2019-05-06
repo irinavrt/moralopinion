@@ -164,7 +164,7 @@ trend_pred <- by_issue %>%
 
 
 hf_trends <- trend_pred %>% 
-  mutate(hf_group = factor(hf_group, labels = c("HF advantage > 0.2", "HF advantage < 0.2"))) %>% 
+  mutate(hf_group = factor(hf_group, levels = c("HF advantage > 0.2", "HF advantage < 0.2"))) %>% 
   group_by(hf_group, year) %>% 
   summarise(value = mean(pred))
 
