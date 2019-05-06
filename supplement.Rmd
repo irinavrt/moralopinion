@@ -1,11 +1,11 @@
 ---
 title: "Supplementary Information"
 output:
+    html_document:
+      keep_md: TRUE
     pdf_document:
       fig_caption: yes
       keep_tex: yes
-    html_document:
-      keep_md: TRUE
 header-includes:
   - \usepackage[labelfont=bf]{caption}
   - \usepackage{float}
@@ -114,7 +114,7 @@ sim_death %>%
 
 ```
 
-```{r sfig3, fig.width = 4, fig.height = 3, fig.cap = paste("**Proportion of liberal opinions within different ideological subcategories.** The average trend between 37 GSS items with absolute harm-fairness advantage larger than 0.2. All groups have become more liberal in their average opinions over the last 40 years. Trajectories of moderate ideological subcategories lie in between the trajectories of the extremes. The sample size varies between years with median", sample_caption, "respondents.")}
+```{r sfig3, fig.width = 4, fig.height = 3, fig.cap = paste("**Proportion of liberal opinions within different ideological subcategories.** The average trend between 37 GSS items with absolute harm-fairness advantage larger than 0.2. All groups have become more liberal in their average opinions over the last 40 years. Trajectories of moderate ideological subcategories lie in between the trajectories of the extremes. The sample size varies between years with median", sample_caption, "respondents."), cashe = TRUE}
 
 # GSS data with added harm-fairness advantage for each issue.
 gss_bin <- read_rds("data/cleaned-gss.rds")
@@ -233,11 +233,9 @@ fixed_effects %>%
 
 
 
-```{r sfig5, fig.width = 6, fig.height = 3, fig.cap = "**Mean correlation between harm-fairness connection advantage and rate of change as a function of sample size of argument measures.** The average correlation based on 200 random draws of n responses. Small sample sizes lead to an underestimation of the main effect, but not its precision. Sample sizes above 40 are sufficient to get reliable estimates of the harm-fairness connection advantage. Note that the sample used has on average 176 responses per issue.", cache = TRUE}
+```{r sfig5, fig.width = 6, fig.height = 3, fig.cap = "**Accuracy of the effect of harm-fairness connection advantage on rate of change as a function of sample size of argument measures.** The figure shows average regression coefficient, its standard error, and resulting correlation based on 200 random draws of n responses. The shade area shows 95% CI. Small sample sizes lead to an underestimation of the main effect, but not its precision. Sample sizes above 40 are sufficient to get an accurate estimate of the main result of the paper. Note that the sample used has on average 176 responses per issue.", cache = TRUE}
 
 # etimate time trends
-gss_bin <- read_rds("data/cleaned-gss.rds")
-
 by_issue <- gss_bin %>% 
   mutate(year_10 = (year - 1972)/10) %>% 
   group_by(issue) %>% 
@@ -319,7 +317,6 @@ by_n %>%
   ggplot(aes(n_samp, mean, ymin = mean - 2*sd, ymax = mean + 2*sd)) +
   geom_ribbon(alpha = 1/2, fill = "grey70") + 
   geom_line() +
-  geom_blank(data = scale_range) +
   theme_classic(base_size = 11) %>% 
   labs(x = "n") +
   facet_wrap(~measure, scales = "free")

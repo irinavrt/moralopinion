@@ -3,5 +3,10 @@
 .RData
 .Ruserdata
 GSS7216_R4.sav
-supplement.pdf
 *.html
+*.tex
+supplement.pdf
+supplement_files
+supplement_cache
+supplement.log
+supplement.synctex.gz
