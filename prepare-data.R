@@ -46,8 +46,8 @@ write_rds(mt, "data/mturk-responses.rds")
 
 # reformat arguments in long format 
 full_arguments <- mt %>% 
-  separate(arg, str_c("arg.", 1:7)) %>% 
-  separate(counter_arg, str_c("counter_arg.", 1:7)) %>% 
+  separate(arg, str_c("arg.", 1:7), fill = "right") %>% 
+  separate(counter_arg, str_c("counter_arg.", 1:7), fill = "right") %>% 
   gather(number, mf, arg.1:counter_arg.7, na.rm = TRUE) %>% 
   separate(number, c("type", "number"), sep = "\\.") %>% 
   select(-number, -age, -gender, -party:-origin) %>% 
@@ -63,7 +63,8 @@ full_arguments <- mt %>%
   gather(type, arg_chosen, pro, against) %>% 
   mutate(opinion = ifelse(type == "pro", answer, 1 - answer),
          change_belief = ifelse(type == "pro", change_belief, -change_belief),
-         position = str_c(issue, type, sep = "_"))
+         position = str_c(issue, type, sep = "_")) %>% 
+  filter(!mf %in% c("lib", "other"))
 
 write_rds(full_arguments, "data/cleaned-arguments.rds")
 
@@ -71,7 +72,6 @@ write_rds(full_arguments, "data/cleaned-arguments.rds")
 # Estimate harm-fairness advantage ----------------------------------------
 
 mf_measures <- full_arguments %>% 
-  filter(!mf %in% c("lib", "other")) %>% 
   group_by(issue, mf, type) %>% 
   summarise(prop = mean(arg_chosen, na.rm = TRUE)) %>% 
   spread(type, prop) %>% 
