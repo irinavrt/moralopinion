@@ -4,8 +4,6 @@ output:
     pdf_document:
       fig_caption: yes
       keep_tex: yes
-#    html_document:
-#      keep_md: TRUE
 header-includes:
   - \usepackage[labelfont=bf]{caption}
   - \usepackage{float}
@@ -330,28 +328,28 @@ by_n %>%
 ```{r stab1, results='asis'}
 
 # estimate rate of change separate for liberals and conservatives
-by_issue_polv <- gss_bin %>% 
-  filter(polviews %in% c("liberal", "conservative")) %>% 
-  mutate(year_10 = (year - 1972)/10) %>% 
-  group_by(issue, polviews) %>% 
+by_issue_polv <- gss_bin %>%
+  filter(polviews %in% c("liberal", "conservative")) %>%
+  mutate(year_10 = (year - 1972)/10) %>%
+  group_by(issue, polviews) %>%
   nest()
 
-gss_trends_by_polv <- gss_trends %>% 
-  left_join(by_issue_polv %>% 
-              mutate(change_rate = map_dbl(data, year_est)) %>% 
-              select(-data) %>% 
-              spread(polviews, change_rate)) %>% 
-  transmute(issue, 
+gss_trends_by_polv <- gss_trends %>%
+  left_join(by_issue_polv %>%
+              mutate(change_rate = map_dbl(data, year_est)) %>%
+              select(-data) %>%
+              spread(polviews, change_rate)) %>%
+  transmute(issue,
             change_rate_comb = sprintf("%.1f\nL: %.1f\nC: %.1f", change_rate*100, liberal*100, conservative*100),
             hf_advantage)
 
 # check if the depfault position is more popular among liberals
-lib_position <- gss_bin %>% 
-  filter(polviews %in% c("liberal", "conservative")) %>% 
-  group_by(issue, polviews) %>% 
-  summarise(mean_opinion = weighted.mean(opinion, wtssall, na.rm = TRUE)) %>% 
-  spread(polviews, mean_opinion) %>% 
-  transmute(lib_position = liberal > conservative) 
+lib_position <- gss_bin %>%
+  filter(polviews %in% c("liberal", "conservative")) %>%
+  group_by(issue, polviews) %>%
+  summarise(mean_opinion = weighted.mean(opinion, wtssall, na.rm = TRUE)) %>%
+  spread(polviews, mean_opinion) %>%
+  transmute(lib_position = liberal > conservative)
 
 # load data for how many coders selected items
 gss_items <- read_csv("data/gss-items.csv")
@@ -359,29 +357,30 @@ gss_items <- read_csv("data/gss-items.csv")
 # arguments connection with each position
 cleaned_arguments <- read_rds("data/cleaned-arguments.rds")
 
-arg_connection <- cleaned_arguments %>% 
-  group_by(question, issue, type, mf) %>% 
-  summarise(mean_chosen = mean(arg_chosen, na.rm = TRUE)) %>% 
-  spread(type, mean_chosen) %>% 
-  mutate(arg_con = sprintf("D: %.2f\nO: %.2f", pro, against)) %>% 
-  select(-pro, -against) %>% 
-  spread(mf, arg_con) %>% 
+arg_connection <- cleaned_arguments %>%
+  group_by(question, issue, type, mf) %>%
+  summarise(mean_chosen = mean(arg_chosen, na.rm = TRUE)) %>%
+  spread(type, mean_chosen) %>%
+  mutate(arg_con = sprintf("D: %.2f\nO: %.2f", pro, against)) %>%
+  select(-pro, -against) %>%
+  spread(mf, arg_con) %>%
   ungroup()
 
 
 # combine info about items in one table
-table_for_print <- arg_connection %>% 
-  left_join(gss_trends_by_polv) %>% 
-  arrange(issue) %>% 
-  left_join(lib_position) %>% 
-  left_join(gss_items %>% select(issue, coders)) %>% 
+table_for_print <- arg_connection %>%
+  left_join(gss_trends_by_polv) %>%
+  arrange(issue) %>%
+  left_join(lib_position) %>%
+  left_join(gss_items %>% select(issue, coders)) %>%
   mutate(question = ifelse(lib_position, str_c(question, "*"), question),
-         question = ifelse(coders == 2, str_c("\\textbf{", question, "}"), question)) %>% 
-  mutate_at(vars(change_rate_comb, auth:pure), linebreak) %>% 
-  select(question, change_rate_comb, hf_advantage, harm, fair, ingr, auth, pure) 
+         question = ifelse(coders == 2, str_c(question, "\\textdagger"), question),
+         question = str_replace(question, "OWNER DECIDES and CAN'T DISCRIMINATE", tolower("OWNER DECIDES and CAN'T DISCRIMINATE"))) %>%
+  mutate_at(vars(change_rate_comb, auth:pure), linebreak) %>%
+  select(question, change_rate_comb, hf_advantage, harm, fair, ingr, auth, pure)
 
-table_for_print %>% 
-  kable(format  = "latex", 
+table_for_print %>%
+  kable(format = "latex",
         booktabs = TRUE,
         longtable = TRUE,
         escape = FALSE,
@@ -391,21 +390,21 @@ table_for_print %>%
                       "Harm", "Fairness", "Loyalty", "Authority", "Purity"),
         caption = "\\textbf{The 74 GSS items used in the study.} An asterisk (*) indicates that the
 default position is the liberal position in the sense that it was held by a higher proportion of liberals
-than conservatives in the GSS. Bold font marks the 50 items that both coders agreed upon. Opinion
+than conservatives in the GSS. A dagger (\\textdagger) marks the 50 items that both coders agreed upon. Opinion
 change rates (in percentage points per ten years) are reported in the whole population and separately
 among liberals (L) and among conservatives (C), with a negative sign if the default position became
 less common over time. The last five columns report each moral foundation’s connection to the default
 position (D) and to the opposing position (O). The harm-fairness connection
 advantage is calculated as the average of the harm and fairness connections for the default position
 minus the same average for the opposing position.") %>%
-  kable_styling(full_width = FALSE, 
-                font_size = 8,
-                latex_options = c("striped", "repeat_header", "HOLD_position"), 
-                repeat_header_text = "The 74 GSS items used in the study \\textit{(continued)}",
-                repeat_header_method = "replace") %>% 
-  column_spec(1, width = "6cm") %>% 
-  column_spec(3, width = "1.5cm") %>% 
-  column_spec(c(2, 4:8), width = "1.2cm") 
+  kable_styling(full_width = FALSE,
+                font_size = 8,#) %>%
+                latex_options = c("striped", "repeat_header", "HOLD_position"),
+                repeat_header_text = "\\textbf{The 74 GSS items used in the study.} \\textit{(continued)}",
+                repeat_header_method = "replace") %>%
+  column_spec(1, width = "6cm") %>%
+  column_spec(3, width = "1.5cm") %>%
+  column_spec(c(2, 4:8), width = "1.2cm")
 
 
 
