@@ -1,0 +1,225 @@
+---
+title: 'Reproducible code for results in the text of the article "The connection
+  between moral position and moral argument drives opinion change"'
+output:
+  html_document:
+    keep_md: TRUE
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(broom)
+library(lmerTest)
+
+source("auxiliary_functions.R")
+
+# GSS data with added harm-fairness advantage for each issue.
+gss_bin <- read_rds("data/cleaned-gss.rds")
+
+# list of 74 moral issues from GSS
+gss_items <- read_csv("data/gss-items.csv")
+
+# mturk argument sample
+mt <- read_rds("data/mturk-responses.rds")
+
+# alternative version of harm-fairness advamntage for robustness check
+mf_measures <- read_rds("data/mf_measures.rds")
+
+```
+
+```{r aggregate_data}
+
+# check if default position is more popular among liberals
+
+mf_data <- gss_bin %>% 
+  filter(polviews %in% c("liberal", "conservative")) %>% 
+  group_by(issue, hf_advantage, lap_advantage,  polviews) %>% 
+  summarise(mean_opinion = weighted.mean(opinion, wtssall, na.rm = TRUE)) %>% 
+  spread(polviews, mean_opinion) %>% 
+  mutate(lib_position = liberal > conservative) %>% 
+  select(-liberal, -conservative)
+  
+
+# estimate genenaral rate of opinion change 
+
+by_issue <- gss_bin %>% 
+  mutate(year_10 = (year - 1972)/10) %>% 
+  group_by(issue) %>% 
+  nest()
+
+year_est <- function(data) {
+  lm(opinion ~ year_10, data, weights = wtssall) %>% 
+    tidy(quick = TRUE) %>% 
+    filter(term == "year_10") %>% 
+    pull(estimate)
+}
+
+change <- by_issue %>% 
+  mutate(change_rate = map_dbl(data, year_est)) %>% 
+  select(-data)
+
+# estimate rate of opinion change separately for liberals and conservatives
+
+by_polv <- gss_bin %>% 
+  mutate(year_10 = (year - 1972)/10) %>% 
+  filter(polviews %in% c("liberal", "conservative")) %>% 
+  group_by(issue, polviews) %>% 
+  nest()
+
+polv_change <- by_polv %>% 
+  mutate(change_rate = map_dbl(data, year_est)) %>% 
+  select(-data) %>% 
+  spread(polviews, change_rate) %>% 
+  rename(lib_change_rate = liberal,
+         cons_change_rate = conservative)
+
+# combine
+
+mf_data <- mf_data %>% 
+  left_join(change, by = "issue") %>% 
+  left_join(polv_change, by = "issue") %>% 
+  ungroup()
+
+```
+
+```{r test}
+
+# liberal liberal positions have larger harm-fairness advantage
+hf_adv_lib_side <- (mf_data$hf_advantage > 0 & mf_data$lib_position)|
+  (mf_data$hf_advantage < 0 & !mf_data$lib_position)
+  
+lib_side_prop <- prop.test(rev(table(hf_adv_lib_side)))
+lib_side_chi <- chisq.test(mf_data$hf_advantage > 0,  mf_data$lib_position)
+
+# public opinion moves towards positions with larger harm-fairness advantage
+hf_adv_trend <- (mf_data$hf_advantage > 0 & mf_data$change_rate > 0)|
+  (mf_data$hf_advantage < 0 & mf_data$change_rate < 0)
+
+trend_prop <- prop.test(rev(table(hf_adv_trend)))
+trend_chi <- chisq.test(mf_data$hf_advantage > 0, mf_data$change_rate > 0)
+
+# the same is true for liberals
+
+hf_adv_lib_trend <- (mf_data$hf_advantage > 0 & mf_data$lib_change_rate > 0)|
+  (mf_data$hf_advantage < 0 & mf_data$lib_change_rate < 0)
+
+lib_trend_prop <- prop.test(rev(table(hf_adv_lib_trend)))
+lib_trend_chi <- chisq.test(mf_data$hf_advantage > 0, mf_data$lib_change_rate > 0)
+
+# and conservatives
+
+hf_adv_cons_trend <- (mf_data$hf_advantage > 0 & mf_data$cons_change_rate > 0)|
+  (mf_data$hf_advantage < 0 & mf_data$cons_change_rate < 0)
+
+cons_trend_prop <- prop.test(rev(table(hf_adv_cons_trend)))
+cons_trend_chi <- chisq.test(mf_data$hf_advantage > 0, mf_data$cons_change_rate > 0)
+
+# correlation between trends among liberals and conservatives
+
+polv_change_cor <- cor.test(mf_data$lib_change_rate, mf_data$cons_change_rate)
+
+# correlation between opinion change rate and harm-fairness advantage
+
+change_vs_hf_adv <- cor.test(mf_data$change_rate, mf_data$hf_advantage)
+
+# the same correlation for 50 issues both coders agreed upon
+both_coders <- gss_items$issue[gss_items$coders == 2]
+mf_data_50 <- mf_data %>% filter(issue %in% both_coders)
+change_vs_hf_adv_50 <- cor.test(mf_data_50$change_rate, mf_data_50$hf_advantage)
+
+
+# correlation with opinion change among liberals
+
+lib_change_vs_hf_adv <- cor.test(mf_data$lib_change_rate, mf_data$hf_advantage)
+
+# correlation with opinion change among conservatives
+
+cons_change_vs_hf_adv <- cor.test(mf_data$cons_change_rate, mf_data$hf_advantage)
+
+# effect of harm-fairness advantage controlling for binding foundations
+mf_data_scaled <- mf_data %>% 
+  mutate_at(vars(change_rate, hf_advantage, lap_advantage), funs(scale(.)[,1]))
+
+mod_bind <- lm(change_rate ~ hf_advantage + lap_advantage, mf_data_scaled)
+
+# nest non-in tependent issues in groups 
+mf_data_gr <- mf_data_scaled %>% 
+  left_join(gss_items %>% select(issue, group)) 
+
+
+mod_gr <- lmer(change_rate ~ hf_advantage + (1|group), data = mf_data_gr)
+set.seed(1)
+m_ci <- confint(mod_gr, method="boot", nsim = 1000)
+
+
+
+```
+
+
+# Results
+## Testing the predictions on GSS data
+
+**Prediction 1** 
+
+The liberal position has larger harm-fairness connection advantage than conservative position: `r sum(hf_adv_lib_side)` out of `r length(hf_adv_lib_side)` issues. This is a predictive accuracy of `r format_test(lib_side_prop)`, (`r format_test(lib_side_chi)`).
+ 
+**Prediction 2** 
+
+Public opinion trended toward the position with harm-fairness advantage for `r sum(hf_adv_trend)` out of `r length(hf_adv_trend)` issues, an accuracy of `r format_test(trend_prop)`, `r format_test(trend_chi)`. Similar results were obtained when looking only at trends among liberals (`r format_test(lib_trend_prop)`, `r format_test(lib_trend_chi)`) and trends among conservatives (`r format_test(cons_trend_prop)`, `r format_test(cons_trend_chi)`). The correlation between trends among liberals and conservatives: `r format_test(polv_change_cor)`. 
+
+**Prediction 3**
+
+The correlation between the opinion change rate and the harm-fairness connection advantage:
+`r format_test(change_vs_hf_adv)`, (r^2 = `r sprintf("%.2f", change_vs_hf_adv$estimate^2)`).
+The same correlation on a subset of 50 issues that both independent coders judged as moral issues: `r format_test(change_vs_hf_adv_50)`.
+
+
+**Robustness of prediction 3**
+
+The correlation between the opinion change rate among liberals and the harm-fairness connection advantage: `r format_test(lib_change_vs_hf_adv)`
+
+The correlation between the opinion change rate among conservatives and the harm-fairness connection advantage: `r format_test(cons_change_vs_hf_adv)`
+
+The effect of harm-fairness advantage, controlling for binding foundations advantage: 
+`r format_coef(mod_bind, "hf_advantage")`, whereas there was no positive effect of positions having an advantage with respect to binding foundations (`r format_coef(mod_bind, "lap_advantage")`).
+
+We also addressed the fact that GSS items cannot necessarily be regarded as independent. We categorised the 74 items into 26 groups based on common themes and averaged the harm-fairness connection advantage within each item group. Hierarchical linear model estimate = 0.77, t (69.9, approximated with Satterthwaite's method) = 9.74 p <0.001, 95% bootstrap confidence interval = [0.61, 0.92].
+
+```{r sampl_descr}
+
+politics <- mt %>% 
+  mutate(polit = cut(politics, c(-1, 0, 3, 4, 7))) %>% 
+  count(polit) %>% 
+  drop_na() %>% 
+  transmute(prop = n/sum(n)) %>% 
+  pull(prop) 
+
+politics <- round(politics*100, 1) %>% str_c("%")
+
+```
+
+
+# Methods
+## Mturk survey
+
+In total, we registered `r nrow(mt)` responses with the average respondent answering `r mt %>% count(workerid) %>% summarise(mean = mean(n)) %>% pull(mean) %>% round(1)` questions. This amounted to `r mt %>% count(issue) %>% summarise(mean = mean(n)) %>% pull(mean) %>% round(1)` responses per each of the 74 GSS issues on average. Since each response constitutes a data point, we present the demographics with respect to responses rather than individuals. The mean age of respondents per response was `r round(mean(mt$age), 1)` years. The share of responses from female respondents was `r round(mean(mt$gender == "Female")*100, 1)`%. The distribution with respect to political ideology was as follows: `r politics[1]` responses came from libertarians, `r politics[2]` from liberals, `r politics[3]` from moderates, and `r politics[4]` from conservative respondents. 
+
+
+```{r hf_adv_robust}
+
+lib_cons_cor <- cor.test(mf_measures$lib_hf_adv, mf_measures$cons_hf_adv)
+position_cor <- cor.test(mf_measures$default_hf_adv, mf_measures$opposite_hf_adv)
+collection_cor <- cor.test(mf_measures$hf_adv_1, mf_measures$hf_adv_2)
+
+```
+
+## Estimation of the harm-fairness connection advantage
+
+The realised range was from `r sprintf("%.2f", min(mf_data$hf_advantage))` to `r sprintf("+%.2f", max(mf_data$hf_advantage))`. For instance, the item “Homosexual couples should have the right to marry one another” had a relatively large harm-fairness connection advantage of `r sprintf("%.2f", mf_data$hf_advantage[mf_data$issue == "marhomo"])`, reflecting that arguments in favour of gay marriage tend to be based on fairness, whereas arguments against gay marriage tend to be based on authority and purity.
+
+We checked the reliability of the measure in three ways. As a first check, we calculated the harm-fairness connection advantage separately among liberals and conservatives. These measures were extremely strongly correlated, pearson’s `r format_test(lib_cons_cor)`. As a second check, we calculated the harm-fairness connection advantage separately among those who favoured the default position and those who favoured the opposite position. These two measures were also strongly correlated across items,`r format_test(position_cor)`. Finally, we checked that the results are the same in the first and the second part of the data collection, `r format_test(collection_cor)`.  Thus, consistent with our analysis of the general agreement on arguments, the measure of harm-fairness connection advantage was not very sensitive to the sample on which we based it.
+
+

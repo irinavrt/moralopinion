@@ -1,0 +1,414 @@
+---
+title: "Supplementary Information"
+output:
+    pdf_document:
+      fig_caption: yes
+      keep_tex: yes
+#    html_document:
+#      keep_md: TRUE
+header-includes:
+  - \usepackage[labelfont=bf]{caption}
+  - \usepackage{float}
+editor_options: 
+  chunk_output_type: inline
+---
+
+\captionsetup[figure]{name=Supplementary Figure}
+\captionsetup[table]{name=Supplementary Table}
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(broom)
+library(furrr)
+library(knitr)
+library(kableExtra)
+
+
+# ggplot settings
+theme_set(theme_classic(base_size = 11))
+
+```
+
+# Supplementary methods 1
+## Simulation model
+We here describe simulations carried out to investigate the robustness of the results of the mathematical model when (1) the probability that an agent is swayed by an argument is allowed to decline if the agent was not moved by that argument previously, and additionally (2) the population is not fixed but includes agents dying and being replaced by naïve agents who have yet to encounter any arguments. 
+
+The simulation model includes 1 000 agents with an equal number of liberals and conservatives. As in the main model, liberals and conservatives differ in the kinds of arguments by which they may be swayed. Conservatives can be swayed by arguments based on any moral foundation, while liberals only accept arguments based on the harm or fairness foundation. The model assumes that there are a total of 10 arguments for each position. The ‘for’ position is always supported by 10 harm-fairness-based arguments. To vary the strength of the harm-fairness connection advantage, we let the number of harm-fairness-based arguments ‘against’ vary between 0 and 9 (with the remaining arguments being based on binding foundations). The population is assumed initially to have only 2% of liberals and 2% of conservatives holding the ‘for’ position. At every time step, each agent discusses an issue with another randomly assigned agent. Influence may occur only if the two agents hold opposite positions, in which case each agent is exposed to a randomly drawn argument for the position they are not currently holding. Given that an agent accepts the argument, the probability that the agent is swayed by it is initially set to 0.5. This probability decreases by a depreciation factor r (0 < *r* < 1) every time the agent is exposed to the argument but not swayed by it.
+
+Running simulations of this model reveals the resulting dynamics to exhibit key similarities with the original model: the position with a harm-fairness connection advantage spreads both among liberals and conservatives, and at a rate that increases with the size of the advantage. However, a new phenomenon may occur if the deterioration in arguments is sufficiently strong compared to the harm-fairness connection advantage; namely, public opinion may then get stuck in a mixed equilibrium, that is, stop moving before the advantaged position has completely taken over, see Supplementary Fig. 1.
+
+We now introduce a birth and death process by which agents are sometimes replaced by naïve individuals. Specifically, at each time point, a fixed proportion of randomly drawn agents is replaced with new agents that are of the same type (liberal or conservative) and hold the same position (for or against) as the agent they replace. As illustrated in Supplementary Fig. 2, the resulting dynamics from simulating this model has the same key features of the model in the main text: the position with a harm-fairness connection advantage spreads both among liberals and conservatives and at a speed that increases with the size of the advantage. Moreover, note that the inclusion of births and deaths typically makes public opinion continue to move until the advantaged position has taken over the whole population. Even with the most extreme deterioration rate of zero, which is equivalent to agents immediately disregarding any future argument they are not convinced by the first time, we find that even a 5% death rate can be enough for the advantaged position to take over completely.
+
+# Supplementary Results 1
+## The effect of opinion and beliefs about opinion change on the connection between position and arguments
+In this section, we will verify that argument support for a moral position is not based on personal opinion of respondents nor on perceived opinion change. Supplementary Fig. 4 shows estimates for opinion, political leaning and beliefs about opinion change from the mixed-effect models. Both having an opinion in favour of a position and believing that the position has become more popular increases the probability of choosing universal arguments for the position. However, these effects together explain about 2% of the variation or less for all types of arguments.
+
+We also control for our main result being enforced by the small but significant effects of individual opinions and beliefs about opinion change. We constructed an alternative measure of harm-fairness connection advantage in which, rather than using average harm and fairness support for each position, we averaged the predicted values from the mixed-effect models for the harm and fairness foundations, controlling for individual opinion, political leaning, and belief about opinion change. The main correlation between the opinion change rate and the alternative measure remained robust, *r*(72) = .69, p < 0.001, 95% CI [0.54, 0.79].
+
+# Supplementary Results 2
+## Harm-fairness connection advantage reliability
+Here we verify that the chosen sample size is sufficient for reliable estimation of the harm-fairness connection advantage. Our end goal was to correlate the harm-fairness connection advantage to change rate estimates. Inaccuracy in the harm-fairness advantage estimates will bias the correlation. We approximated a possible bias with random draws of subsamples from the Mturk responses. The results are presented in Supplementary Fig. 5, which shows how the estimated correlation between the harm-fairness connection advantage and the rate of change reaches 0.7 already at n = 40.
+
+We also found that the results are the same in the first and the second half of the data collection, *r*(72) = 0.97, p < 0.001, 95% CI [0.96, 0.98].
+
+# Supplementary figures
+
+```{r sfig1, fig.width = 4, fig.height = 2.85, fig.cap = '\\textbf{Support of the advantaged position when the simulation model with argument deterioration has reached equilibrium.} Public opinion equilibria generated by 100 simulations with an argument deterioration rate of *r* = 0.5. The harm-fairness connection advantage is either large (model A: 10 harm-fairness arguments "for" and 2 "against") or small (model B: 10 harm-fairness arguments "for" and 6 "against"). In the latter case, the plot shows that public opinion stops moving before the advantaged position has taken over completely.', fig.pos = 'h', fig.align='center'}
+
+sim_arg <- read_rds("data/sim-argument-deterioration.rds")
+
+sim_arg %>% 
+  # convergence point
+  filter(step == 51) %>% 
+  gather(group, prop, p_cons, p_lib) %>% 
+  mutate(group = factor(group, labels = c("Conservatives", "Liberals"))) %>% 
+  ggplot(aes(factor(pa, labels = c("A", "B")), 
+             prop, color = group, group = group)) +
+  geom_point(position = position_dodge(width = .05), size = 2) +
+  geom_line(position = position_dodge(width = .05), size = 1) +
+  labs(color = NULL, x = "Model", y = "Proportion") +
+  theme_classic(base_size = 11) +
+  ylim(c(0, 1)) +
+  scale_colour_manual(values = c("#1a5694", "#c9445a")) +    
+  theme(panel.grid.major =  element_blank(), 
+        legend.position = c(.21,.25),
+        legend.text = element_text(size = 9))
+
+```
+
+```{r sfig2, fig.width = 7, fig.height = 3, fig.cap = '**How liberal and conservative opinions change when births and deaths are included in the simulation model with deteriorating arguments.** Opinion movement generated by the simulation model, averaged over 100 simulations, when the argument deterioration is set to the extreme value of *r* = 0 (immediate deterioration). The harm-fairness connection advantage is either large (model A: 10 harm-fairness arguments "for" and 2 "against") or small (model B: 10 harm-fairness arguments "for" and 6 "against"). As the death rate increases from 1% to 5%, we see that, even in the small advantage condition, the advantaged position eventually takes over the whole population.'}
+
+sim_death <- read_rds("data/sim-death-process.rds")
+
+# no linetype
+sim_death %>% 
+  gather(type, prop, p_cons, p_lib) %>% 
+  mutate(death_rate = str_c(death_rate*100, "%"),
+         measure = str_c(type, pa),
+         measure = factor(measure, 
+                          levels = c("p_lib0.2",
+                                     "p_cons0.2",
+                                     "p_lib0.6",
+                                     "p_cons0.6"),
+                          labels = c("Liberals, model A", "Conservatives, model A", 
+                                     "Liberals, model B", "Conservatives, model B"))) %>% 
+  ggplot(aes(t, prop, color = measure, linetype = measure)) +
+  geom_line(size = 1) +
+  facet_wrap(~death_rate) +
+  labs(linetype = NULL, x = "Rounds", y = "Proportion") +
+  theme_classic(base_size = 11) +
+  scale_colour_manual(name = NULL,
+                      values = c("#1a5694", "#c9445a", 
+                                 "#1a5694", "#c9445a")) +   
+  scale_linetype_manual(name = NULL,
+                        values = c(1, 1, 2, 2))+
+  theme(panel.grid.major =  element_blank(), 
+        legend.position = c(.87,.25),
+        legend.text = element_text(size = 8),
+        legend.margin = margin(0, 0, 0, 0))
+
+
+```
+
+```{r sfig3, fig.width = 4, fig.height = 3, fig.cap = paste("**Proportion of liberal opinions within different ideological subcategories.** The average trend between 37 GSS items with absolute harm-fairness advantage larger than 0.2. All groups have become more liberal in their average opinions over the last 40 years. Trajectories of moderate ideological subcategories lie in between the trajectories of the extremes. The sample size varies between years with median", sample_caption, "respondents."), cashe = TRUE}
+
+gss_bin <- read_rds("data/cleaned-gss.rds")
+
+gss_lib_side <- gss_bin %>% 
+  # recode issues so that "yes" position is the position with larger harm-fairness advantage
+  mutate(opinion = ifelse(hf_advantage < 0, 1 - opinion, opinion))
+
+# Proportion of liberal opinions by political ideology
+
+gss_lib_side <- gss_lib_side %>% 
+  mutate(polviews_cont = factor(polviews_cont)) %>% 
+  drop_na(polviews_cont)
+
+
+# predict time trends
+predict_trend <- function(data) {
+  m <- glm(opinion ~ year*polviews_cont,  
+           data, weights = wtssall, na.action="na.exclude", family = binomial())  
+}
+
+by_variable <- gss_lib_side %>% 
+  filter(abs(hf_advantage) > .2) %>% 
+  group_by(issue, hf_advantage) %>% 
+  nest()
+
+newdata <- as.tibble(expand.grid(year = 1974:2016,
+                                 polviews_cont = unique(gss_lib_side$polviews_cont)))
+
+predictions <-  by_variable %>% 
+  mutate(model = map(data, ~predict_trend(.x)),
+         predicted_trends = map(model, ~mutate(newdata, 
+                                               pred = predict(.x, newdata, 
+                                                              type = "response")))) %>% 
+  unnest(predicted_trends)
+
+predictions <- predictions %>% 
+  mutate(polviews_cont = factor(polviews_cont,
+                                labels = c("Extremely liberal",
+                                           "Liberal",
+                                           "Moderately liberal",
+                                           "Moderate",
+                                           "Moderately conservative",
+                                           "Conservative", 
+                                           "Extremely conservative")))
+
+time_tr_aggr <- predictions %>% 
+  group_by(year, polviews_cont) %>% 
+  summarise(value = mean(pred))
+
+label_data <- time_tr_aggr %>%
+  group_by(polviews_cont) %>% 
+  filter(year == max(year))  %>% 
+  mutate(value = ifelse(polviews_cont == "Extremely liberal", value + .04, value))
+
+# average sample size by polviews group
+sample_size <- gss_lib_side %>% 
+  filter(issue == first(issue)) %>% 
+  group_by(polviews_cont) %>% 
+  count(year) %>% 
+  summarise(median = median(n)) %>% 
+  pull(median)
+
+sample_caption <- paste(sample_size[-7], tolower(levels(predictions$polviews_cont))[-7], collapse = ", ")
+sample_caption <- paste0(sample_caption, ", and ", sample_size[7], " ", tolower(levels(predictions$polviews_cont))[7])
+
+
+# plot time trends
+time_tr_aggr %>% 
+  ggplot(aes(year, value, color = polviews_cont, label = polviews_cont)) +
+  geom_line(size = .5) +
+  labs(x = "Year", y = "Proportion", color = NULL) +
+  scale_color_manual(values = c("#0F3053", "#3C526A", "#6A7581", #"#226fbf", #d46c7d", 
+                                "#999999", "#97747A", "#964F5B", "#952B3D")) +
+  geom_text(data = label_data, hjust = 0, nudge_x = .5, size = 9*.23) +
+  theme_classic(base_size = 11)+
+  theme(legend.position = "none")+
+  lims(y = c(0, .9), x = c(1974, 2030))
+
+
+```
+
+
+```{r sfig4, fig.width = 8, fig.height = 3.5, fig.cap = "**Effect of respondents’ moral opinion, political ideology and beliefs about public opinion change on applicability of arguments for different moral positions.** Having an opinion in favour of a position increases the probability of choosing universal arguments, and reduces the probability of choosing binding arguments. Believing that the position has become more popular has a similar but much smaller effect. Political leaning has no effect. Note that all these effects combined explain less than 3% of the variance in which argument was selected for each position (see Fig. 1). The sample size is 24 465 argument evaluations in the baseline model (black) and 14 492 in the extended model (grey). The group sizes are 74 GSS issues, 148 moral positions, 409 individuals in the baseline model and 219 in the full  model."}
+
+mf_rpt <- read_rds("data/arguments-agreement-rpt-models.rds")
+
+fixed_effects <- mf_rpt %>% 
+  mutate(res = map(rpt_model, ~.$mod %>% tidy(effects = "fixed", conf.int = TRUE))) %>% 
+  unnest(res) %>% 
+  filter(term != "(Intercept)") %>% 
+  mutate_at(vars(estimate, conf.low, conf.high), exp) %>% 
+  mutate(term = factor(term, 
+                       levels = c("change_belief", "politics", "opinion"),
+                       labels = c( "Beliefs about\nopinion change", "Political ideology", "Opinion")),
+         mf = factor(mf, 
+                     levels = c("harm", "fair", "ingr", "auth", "pure"),
+                     labels = c("Harm", "Fairness", "Loyalty", "Authority", "Purity")),
+         fixed_eff = factor(fixed_eff, labels = c("baseline model", "with beliefs about opinion change")))
+
+fixed_effects %>% 
+  ggplot(aes(estimate, term, xmin = conf.low, xmax = conf.high, color = fixed_eff)) + 
+  geom_vline(xintercept = 1,size = .5, color = "grey70") +
+  ggstance::geom_linerangeh(position = ggstance::position_dodgev(height = 0.2),
+                            size = 1) +
+  geom_point(position = ggstance::position_dodgev(height = 0.2),
+             size = 1.5) +
+  scale_colour_grey(start = 0.2, end = 0.8)+
+  facet_grid(. ~ mf, scales = "free_y", space = "free") +
+  labs(x = "odds ratio", y = NULL, color=NULL) + 
+  theme_classic(base_size = 11) +
+  theme(legend.position = "bottom")
+
+
+```
+
+
+
+```{r sfig5, fig.width = 6, fig.height = 3, fig.cap = "**Accuracy of the effect of harm-fairness connection advantage on rate of change as a function of sample size of argument measures.** The figure shows average regression coefficient, its standard error, and resulting correlation based on 200 random draws of n responses. The shade area shows 95% CI. Small sample sizes lead to an underestimation of the main effect, but not its precision. Sample sizes above 40 are sufficient to get an accurate estimate of the main result of the paper. Note that the sample used has on average 176 responses per issue.", cache = TRUE}
+
+# original mturk responses to sample from
+mt <- read_rds("data/mturk-responses.rds")
+
+
+# etimate time trends
+by_issue <- gss_bin %>% 
+  mutate(year_10 = (year - 1972)/10) %>% 
+  group_by(issue, hf_advantage) %>% 
+  nest()
+
+year_est <- function(data) {
+  lm(opinion ~ year_10, data, weights = wtssall) %>% 
+    tidy(quick = TRUE) %>% 
+    filter(term == "year_10") %>% 
+    pull(estimate)
+}
+
+gss_trends <- by_issue %>% 
+  mutate(change_rate = map_dbl(data, year_est)) %>% 
+  select(-data)
+
+# this function estimates correlation between harm-fainess advantage and rate of change based on random n responsed
+draw_cor_for_selected_n_orig_response <- function(n, mturk_data = mt, trends = gss_trends){
+  full_arguments <- mturk_data %>% 
+    group_by(issue) %>% 
+    sample_n(n, replace = TRUE) %>% 
+    ungroup() %>% 
+    rowid_to_column() %>% 
+    separate(arg, str_c("arg.", 1:7), fill = "right") %>% 
+    separate(counter_arg, str_c("counter_arg.", 1:7), fill = "right") %>% 
+    gather(number, mf, arg.1:counter_arg.7, na.rm = TRUE) %>% 
+    separate(number, c("type", "number"), sep = "\\.") %>% 
+    select(-number, -collection, -age:-origin, -change_belief, -question) %>% 
+    mutate(mf = factor(mf, labels = c("harm", "fair", "ingr", "auth", "pure", "lib", "other" )),
+           value = 1) %>% 
+    spread(mf, value, fill = 0) %>% 
+    gather(mf, value, harm:other) %>% 
+    spread(type, value) %>% 
+    mutate(pro = ifelse(answer == 1, arg, counter_arg),
+           against = ifelse(answer == 0, arg, counter_arg)) %>% 
+    select(-arg, -counter_arg) 
+  
+  
+  mf_data <- full_arguments %>% 
+    filter(mf %in% c("harm", "fair")) %>% 
+    group_by(issue, mf) %>% 
+    summarise(pro = mean(pro, na.rm = TRUE),
+              against = mean(against, na.rm = TRUE)) %>% 
+    mutate(adv = pro - against) %>% 
+    select(-pro, -against) %>% 
+    spread(mf, adv) %>% 
+    mutate(hf_adv = (harm + fair)/2) %>% 
+    ungroup() %>% 
+    left_join(trends, by = "issue") 
+  
+  lm(change_rate ~ hf_adv, mf_data) %>% 
+    broom::tidy() %>% 
+    filter(term == "hf_adv") %>% 
+    select(estimate, std.error) %>% 
+    mutate(cor = mf_data %>% 
+             summarise(cor = cor(hf_adv, change_rate)) %>% 
+             unlist())
+}
+
+by_n <- tibble(n_samp = rep(c(2, 5, 10, 20, 40, 60, 80, 100, 120, 150), 
+                            each = 200)) 
+
+plan(multiprocess)
+
+by_n <- by_n %>% 
+  mutate(cor = future_map(n_samp, draw_cor_for_selected_n_orig_response))
+
+by_n %>% 
+  unnest(cor) %>% 
+  gather(measure, value, estimate, std.error, cor) %>% 
+  mutate(measure = factor(measure, 
+                          levels = c("estimate", "std.error", "cor"),
+                          labels = c("coefficient", "standard error", "correlation"))) %>% 
+  group_by(n_samp, measure) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>%
+  ggplot(aes(n_samp, mean, ymin = mean - 2*sd, ymax = mean + 2*sd)) +
+  geom_ribbon(alpha = 1/2, fill = "grey70") + 
+  geom_line() +
+  theme_classic(base_size = 11) %>% 
+  labs(x = "n") +
+  facet_wrap(~measure, scales = "free")
+
+```
+
+\newpage
+
+# Supplementary tables
+
+```{r stab1, results='asis'}
+
+# estimate rate of change separate for liberals and conservatives
+by_issue_polv <- gss_bin %>% 
+  filter(polviews %in% c("liberal", "conservative")) %>% 
+  mutate(year_10 = (year - 1972)/10) %>% 
+  group_by(issue, polviews) %>% 
+  nest()
+
+gss_trends_by_polv <- gss_trends %>% 
+  left_join(by_issue_polv %>% 
+              mutate(change_rate = map_dbl(data, year_est)) %>% 
+              select(-data) %>% 
+              spread(polviews, change_rate)) %>% 
+  transmute(issue, 
+            change_rate_comb = sprintf("%.1f\nL: %.1f\nC: %.1f", change_rate*100, liberal*100, conservative*100),
+            hf_advantage)
+
+# check if the depfault position is more popular among liberals
+lib_position <- gss_bin %>% 
+  filter(polviews %in% c("liberal", "conservative")) %>% 
+  group_by(issue, polviews) %>% 
+  summarise(mean_opinion = weighted.mean(opinion, wtssall, na.rm = TRUE)) %>% 
+  spread(polviews, mean_opinion) %>% 
+  transmute(lib_position = liberal > conservative) 
+
+# load data for how many coders selected items
+gss_items <- read_csv("data/gss-items.csv")
+
+# arguments connection with each position
+cleaned_arguments <- read_rds("data/cleaned-arguments.rds")
+
+arg_connection <- cleaned_arguments %>% 
+  group_by(question, issue, type, mf) %>% 
+  summarise(mean_chosen = mean(arg_chosen, na.rm = TRUE)) %>% 
+  spread(type, mean_chosen) %>% 
+  mutate(arg_con = sprintf("D: %.2f\nO: %.2f", pro, against)) %>% 
+  select(-pro, -against) %>% 
+  spread(mf, arg_con) %>% 
+  ungroup()
+
+
+# combine info about items in one table
+table_for_print <- arg_connection %>% 
+  left_join(gss_trends_by_polv) %>% 
+  arrange(issue) %>% 
+  left_join(lib_position) %>% 
+  left_join(gss_items %>% select(issue, coders)) %>% 
+  mutate(question = ifelse(lib_position, str_c(question, "*"), question),
+         question = ifelse(coders == 2, str_c("\\textbf{", question, "}"), question)) %>% 
+  mutate_at(vars(change_rate_comb, auth:pure), linebreak) %>% 
+  select(question, change_rate_comb, hf_advantage, harm, fair, ingr, auth, pure) 
+
+table_for_print %>% 
+  kable(format  = "latex", 
+        booktabs = TRUE,
+        longtable = TRUE,
+        escape = FALSE,
+        align = "l",
+        digits = 3,
+        col.names = c("Item", "Opinion change", "Harm Fairness advantage",
+                      "Harm", "Fairness", "Loyalty", "Authority", "Purity"),
+        caption = "\\textbf{The 74 GSS items used in the study.} An asterisk (*) indicates that the
+default position is the liberal position in the sense that it was held by a higher proportion of liberals
+than conservatives in the GSS. Bold font marks the 50 items that both coders agreed upon. Opinion
+change rates (in percentage points per ten years) are reported in the whole population and separately
+among liberals (L) and among conservatives (C), with a negative sign if the default position became
+less common over time. The last five columns report each moral foundation’s connection to the default
+position (D) and to the opposing position (O). The harm-fairness connection
+advantage is calculated as the average of the harm and fairness connections for the default position
+minus the same average for the opposing position.") %>%
+  kable_styling(full_width = FALSE, 
+                font_size = 8,
+                latex_options = c("striped", "repeat_header", "HOLD_position"), 
+                repeat_header_text = "The 74 GSS items used in the study \\textit{(continued)}",
+                repeat_header_method = "replace") %>% 
+  column_spec(1, width = "6cm") %>% 
+  column_spec(3, width = "1.5cm") %>% 
+  column_spec(c(2, 4:8), width = "1.2cm") 
+
+
+
+```
+
+

@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+GSS7216_R4.sav
+*.html
+*.tex
+supplement.pdf
+supplement_files
+supplement_cache
+supplement.log
+supplement.synctex.gz
