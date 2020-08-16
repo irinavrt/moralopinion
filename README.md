@@ -2,7 +2,7 @@
 
 by P. Strimling, I. Vartanova, F. Jansson, and K. Eriksson (2019)
 
-This study investigates how moral positions and moral arguments drive opinion change.  Based on a formal model of opinion dynamics as well as moral foundations theory, we studied what makes certain issue positions more popular among liberals than among conservatives, and what makes certain issue positions become steadily more popular over time while public opinion remains stable on other issues. An online survey examined such connections between moral positions and moral arguments. Our key findings comprise that i) certain moral positions are more common among liberals than among conservatives due to a larger amount of harm- and fairness-based arguments that speak for them; ii) both conservatives and liberals gradually shift opinions in the same (liberal) direction and at the same rate, with conservatives lagging behind; and iii) public opinion on a given issue tends to move at a rate related to how much better harm–fairness arguments connect with one position than with the opposing position.
+This study investigates how moral arguments drive opinion change. Based on a formal model of opinion dynamics as well as moral foundations theory, we studied what makes certain issue positions more popular among liberals than among conservatives, and what makes certain issue positions become steadily more popular over time while public opinion remains stable on other issues. An online survey examined the connection between moral positions and moral arguments. Our key findings comprise that i) certain moral positions are more common among liberals than among conservatives due to a larger amount of harm- and fairness-based arguments that speak for them; ii) both conservatives and liberals gradually shift opinions in the same (liberal) direction and at the same rate, with conservatives lagging behind; and iii) public opinion on a given issue tends to move at a rate related to how much better harm–fairness arguments connect with one position than with the opposing position.
 
 This repository contains data and R code to reproduce the results of the paper. Read the paper here: https://rdcu.be/bRXqZ
 
@@ -46,11 +46,11 @@ The current subsection describes each folder and file to navigate easily through
 
 ### GSS Data
 
-The cumulative codebook of the General Social Survey (1972-2018) can be found under the following [GSS website](http://gss.norc.org/documents/codebook/gss_codebook.pdf).
+The raw dataset and the cumulative codebook of the General Social Survey (1972-2018) can be found under the following [GSS website](http://gss.norc.org/documents/codebook/gss_codebook.pdf).
 
 ### Mturk Data
 
-We analyzed the data with R via RStudio, using the tidyverse package. The raw and processed data comprises the following variables stemming from the Mturk dataset:
+The raw and processed data comprises the following variables stemming from the Mturk dataset:
 
 #### Variables of the [processed dataset] (data/mturk-agrument-data.csv)
 
