@@ -206,7 +206,7 @@ fixed_effects <- mf_rpt %>%
   filter(term != "(Intercept)") %>% 
   mutate_at(vars(estimate, conf.low, conf.high), exp) %>% 
   mutate(term = factor(term, 
-                       levels = c("change_belief", "politics", "opinion"),
+                       levels = c("belief_publicopinion", "politics", "opinion"),
                        labels = c( "Beliefs about\nopinion change", "Political ideology", "Opinion")),
          mf = factor(mf, 
                      levels = c("harm", "fair", "ingr", "auth", "pure"),
@@ -265,14 +265,14 @@ draw_cor_for_selected_n_orig_response <- function(n, mturk_data = mt, trends = g
     separate(counter_arg, str_c("counter_arg.", 1:7), fill = "right") %>% 
     gather(number, mf, arg.1:counter_arg.7, na.rm = TRUE) %>% 
     separate(number, c("type", "number"), sep = "\\.") %>% 
-    select(-number, -collection, -age:-origin, -change_belief, -question) %>% 
+    select(-number, -collection, -age:-origin, -belief_publicopinion, -question) %>% 
     mutate(mf = factor(mf, labels = c("harm", "fair", "ingr", "auth", "pure", "lib", "other" )),
            value = 1) %>% 
     spread(mf, value, fill = 0) %>% 
     gather(mf, value, harm:other) %>% 
     spread(type, value) %>% 
-    mutate(pro = ifelse(answer == 1, arg, counter_arg),
-           against = ifelse(answer == 0, arg, counter_arg)) %>% 
+    mutate(pro = ifelse(opinion == 1, arg, counter_arg),
+           against = ifelse(opinion == 0, arg, counter_arg)) %>% 
     select(-arg, -counter_arg) 
   
   
