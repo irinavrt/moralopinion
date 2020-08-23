@@ -1,4 +1,4 @@
-issue,question,answer,arg,counter_arg,workerid,change_belief,collection,age,gender,politics,party,ethnic,origin
+issue,question,opinion,arg,counter_arg,workerid,belief_publicopinion,collection,age,gender,politics,party,ethnic,origin
 abany,Do you think it should be possible for a pregnant woman to obtain a legal abortion if the woman wants it for any reason?,1,5,4|0,141,NA,1,24,Female,2,Democrat,european|other,us
 abany,Do you think it should be possible for a pregnant woman to obtain a legal abortion if the woman wants it for any reason?,0,1|4,0|1|5,336,NA,1,54,Male,5,Independent,european,us
 abany,Do you think it should be possible for a pregnant woman to obtain a legal abortion if the woman wants it for any reason?,1,5,4,13,NA,1,38,Female,5,Republican,european,us

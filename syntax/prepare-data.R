@@ -14,35 +14,11 @@ library(haven)
 # list of 74 moral issues from GSS with questions and variable that notes if the issue was selected by one or both coders
 gss_items <- read_csv("data/gss-items.csv")
 
-source("auxiliary_functions.R")
+source("syntax/auxiliary_functions.R")
 
 # mturk data --------------------------------------------------------------
 
-mt <- read_csv("data/mturk-agrument-data.csv", guess_max = 10000)
-mt_demogr <- read_csv("data/mturk-participants.csv")
-
-# add gss items names and select relevant variable
-mt <- mt %>%
-  right_join(gss_items, by = c("Input.question" = "question")) %>% 
-  select(issue,
-         question = Input.question,
-         answer = Answer.answer,
-         arg = Answer.arg,
-         counter_arg = Answer.counterarg,
-         workerid = WorkerId, 
-         change_belief = Answer.opinion,
-         collection) %>% 
-  left_join(mt_demogr %>% 
-              select(workerid = WorkerId, 
-                     age = Answer.Age, 
-                     gender = Answer.Gender, 
-                     politics = Answer.Politics,
-                     party = Answer.Party,
-                     ethnic = Answer.ethnic,
-                     origin = Answer.origin))
-
-# save individual responses data for demographics description in the paper
-write_rds(mt, "data/mturk-responses.rds")
+mt <- read_csv("data/mturk-responses.csv", guess_max = 10000)
 
 # reformat arguments in long format 
 full_arguments <- mt %>% 
@@ -57,12 +33,12 @@ full_arguments <- mt %>%
   spread(mf, arg_chosen, fill = 0) %>% 
   gather(mf, arg_chosen, harm:other) %>% 
   spread(type, arg_chosen) %>% 
-  mutate(pro = ifelse(answer == 1, arg, counter_arg),
-         against = ifelse(answer == 1, counter_arg, arg))  %>% 
+  mutate(pro = ifelse(opinion == 1, arg, counter_arg),
+         against = ifelse(opinion == 1, counter_arg, arg))  %>% 
   select(-arg, -counter_arg) %>% 
   gather(type, arg_chosen, pro, against) %>% 
-  mutate(opinion = ifelse(type == "pro", answer, 1 - answer),
-         change_belief = ifelse(type == "pro", change_belief, -change_belief),
+  mutate(opinion = ifelse(type == "pro", opinion, 1 - opinion),
+         belief_publicopinion = ifelse(type == "pro", belief_publicopinion, -belief_publicopinion),
          position = str_c(issue, type, sep = "_")) %>% 
   filter(!mf %in% c("lib", "other"))
 
@@ -104,16 +80,16 @@ mf_polv <- full_arguments %>%
 # hf_advantage estimated separately among those who hold the default position, or the opposite position
 mf_position <- full_arguments %>% 
   filter(!mf %in% c("lib", "other")) %>% 
-  mutate(answer = factor(answer, labels = c("opposite", "default"))) %>% 
-  group_by(issue,  mf, type, answer) %>% 
+  mutate(opinion = factor(opinion, labels = c("opposite", "default"))) %>% 
+  group_by(issue,  mf, type, opinion) %>% 
   summarise(prop = mean(arg_chosen, na.rm = TRUE)) %>% 
   spread(type, prop) %>% 
   mutate(mf_advantage = pro - against) %>% 
   select(-pro, -against) %>% 
   spread(mf, mf_advantage) %>%
   mutate(hf_adv = (harm + fair)/2) %>% 
-  select(issue, answer, hf_adv) %>% 
-  spread(answer, hf_adv) %>% 
+  select(issue, opinion, hf_adv) %>% 
+  spread(opinion, hf_adv) %>% 
   rename(opposite_hf_adv = opposite, default_hf_adv = default)
 
 # hf_advantage estimated separately in 2 data collections

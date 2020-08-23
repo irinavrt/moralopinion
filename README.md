@@ -57,7 +57,7 @@ The raw and processed data comprises the following variables stemming from the M
 - question = Moral issue from GSS questionnaire presented to participants ```[E.g. Do you think it should be possible for a pregnant woman to obtain a legal abortion if the woman wants it for any reason?]```
 - order = Random order of presented question on Mturk.
 - items = Different moral issues based on the GSS questionnaire that were displayed to participants.  
-- answer = position = Participants’ answer to moral issues ```[question yes no]```
+- opinion = Participants’ answer to moral issues ```[question yes no]```
 - arg = Participants’ argument for being for or against a moral issue ```[Now consider why you chose that answer. Which of the following arguments apply?]```
 	- Harm
       - ```otherwise someone suffers emotionally```
@@ -110,8 +110,8 @@ The raw and processed data comprises the following variables stemming from the M
        - ```otherwise someone’s freedom of choice is restricted```
        - ```then everyone is free to decide what group norms or traditions they want to follow```
        
-- workerId = Participants’ identification number (anonymized).
-- change_belief = Publicopinion = Participants’ beliefs on public opinion change during the last 40 years on a 5-point scale ranging from ```support has gone down by 15 percentage points or more``` to ```support has gone up by 15 percentage points or more```.
+- workerid = Participants’ identification number (anonymized).
+- belief_publicopinion = Participants’ beliefs on public opinion change during the last 40 years on a 5-point scale ranging from ```support has gone down by 15 percentage points or more``` to ```support has gone up by 15 percentage points or more```.
 - hf_advantage = Harm-fairness advantage.
 - lib_hf_ad = Harm-fairness advantage of liberals.
 - cons_hf_adv = Harm-fairness advantage of conservatives.

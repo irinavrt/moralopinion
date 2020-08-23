@@ -3,20 +3,6 @@ library(rptR)
 
 full_arguments <- read_rds("data/cleaned-arguments.rds")
 
-full_arguments %>% 
-  filter(mf == "fair") %>% 
-  group_by(opinion) %>% 
-  summarise(mean(arg_chosen, na.rm = TRUE))
-  group_by()
-
-  
-m <- lme4::glmer(arg_chosen ~ opinion + politics  + change_belief + 
-             (1|position) + (1|issue) + (1|workerid),
-            full_arguments %>% 
-              filter(mf == "fair"),
-            family = binomial())
-  
-  
 # baseline model ----------------------------------------------------------
 
 estimate_icc_baseline <- function(data, nboot = 1000, ncores = 4){
@@ -44,7 +30,7 @@ icc_baseline <- by_mf_baseline %>%
 # full model --------------------------------------------------------------
 
 estimate_icc_full <- function(data, nboot = 1000, ncores = 4){
-  rptBinary(arg_chosen ~ opinion + politics  + change_belief + (1|position) + (1|issue) + (1|workerid), 
+  rptBinary(arg_chosen ~ opinion + politics  + belief_publicopinion + (1|position) + (1|issue) + (1|workerid), 
             grname = c("position", "issue", "workerid", "Fixed"), 
             data = data, 
             link = "logit", 
@@ -56,7 +42,7 @@ estimate_icc_full <- function(data, nboot = 1000, ncores = 4){
 by_mf_full <- full_arguments %>% 
   filter(!mf %in% c("lib", "other"), # exclude other arguments and arguments based on liberty foundation, as it is not part of moral foundation quesionnaire
          politics != 0, # exlude libertarians
-         !is.na(change_belief)) %>%  
+         !is.na(belief_publicopinion)) %>%  
   group_by(mf) %>% 
   nest()
 
